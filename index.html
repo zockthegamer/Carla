@@ -1,24 +1,48 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Cobranza</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <style>
-        body { background-color: #f8f9fa; }
-        .card { border-radius: 0.75rem; }
-        .pendiente { border-left: 5px solid #dc3545; } /* Rojo */
-        .pagado { border-left: 5px solid #198754; }    /* Verde */
+        body { background-color: #212529; color: #dee2e6; }
+        .card { border-radius: 0.75rem; background-color: #343a40; }
+        .pendiente { border-left: 5px solid #dc3545; }
+        .pagado { border-left: 5px solid #198754; }
+        .vencido { border-left: 5px solid #ffc107; background-color: #493e2b; }
+        .summary-card { background-color: #343a40; border: 1px solid #495057; }
     </style>
 </head>
 <body>
     <div class="container mt-4 mb-5">
-        <h1 class="text-center mb-4">📝 Lista de Cobranza</h1>
+        <h1 class="text-center mb-4">📝 Gestor de Cobranza</h1>
+
+        <div class="row text-center mb-4 g-3">
+            <div class="col-md-4">
+                <div class="card summary-card p-3">
+                    <h5 class="card-title">Total por Cobrar</h5>
+                    <p class="fs-4 fw-bold text-success" id="total-por-cobrar">S/ 0.00</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card summary-card p-3">
+                    <h5 class="card-title">Capital Prestado</h5>
+                    <p class="fs-4 fw-bold text-info" id="capital-prestado">S/ 0.00</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card summary-card p-3">
+                    <h5 class="card-title">Ganancia Potencial</h5>
+                    <p class="fs-4 fw-bold text-warning" id="ganancia-potencial">S/ 0.00</p>
+                </div>
+            </div>
+        </div>
 
         <div class="d-grid gap-2 mb-4">
-            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addModal">
-                + Agregar Nuevo Préstamo
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addEditModal" onclick="prepararModalParaAgregar()">
+                <i class="bi bi-plus-circle"></i> Agregar Nuevo Préstamo
             </button>
         </div>
 
@@ -27,15 +51,16 @@
         </div>
     </div>
 
-    <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+    <div class="modal fade" id="addEditModal" tabindex="-1" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="addModalLabel">Nuevo Préstamo</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <h5 class="modal-title" id="modal-title"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form id="add-form">
+                    <form id="add-edit-form">
+                        <input type="hidden" id="deudor-id">
                         <div class="mb-3">
                             <label for="nombre" class="form-label">Nombre</label>
                             <input type="text" class="form-control" id="nombre" required>
@@ -53,14 +78,14 @@
                             <input type="number" step="0.01" class="form-control" id="interes" required>
                         </div>
                         <div class="mb-3">
-                            <label for="fecha_pago" class="form-label">Fecha del Primer Pago</label>
+                            <label for="fecha_pago" class="form-label">Fecha de Pago</label>
                             <input type="date" class="form-control" id="fecha_pago" required>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="button" class="btn btn-primary" onclick="guardarNuevoDeudor()">Guardar Préstamo</button>
+                    <button type="button" class="btn btn-primary" id="guardar-btn">Guardar</button>
                 </div>
             </div>
         </div>
@@ -72,7 +97,7 @@
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 
     <script>
-        // ------------------ 1. CONFIGURACIÓN DE FIREBASE (¡YA ESTÁ LISTA CON TUS DATOS!) ------------------
+        // CONFIGURACIÓN DE FIREBASE (YA ESTÁ LISTA CON TUS DATOS)
         const firebaseConfig = {
             apiKey: "AIzaSyDFu2IrRdTF_BHAaM6GzrGQhzHejGzckDY",
             authDomain: "gestor-cobranza-c9ade.firebaseapp.com",
@@ -83,57 +108,90 @@
             appId: "1:697644692343:web:dcb5c44b46c7c740ce6772",
             measurementId: "G-0CLMFD358B"
         };
-        // ----------------------------------------------------------------
-
-        // Inicializar la app de Firebase
+        
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const deudoresRef = database.ref('/prestamos');
         const listaDeudoresDiv = document.getElementById('lista-deudores');
+        const modalElement = new bootstrap.Modal(document.getElementById('addEditModal'));
+        const deudorForm = document.getElementById('add-edit-form');
 
-        // ------------------ 2. LEER Y MOSTRAR DATOS EN TIEMPO REAL ------------------
+        // LEER Y MOSTRAR DATOS EN TIEMPO REAL
         deudoresRef.orderByChild('estado').on('value', (snapshot) => {
             listaDeudoresDiv.innerHTML = '';
             const data = snapshot.val();
+            let totalPorCobrar = 0, capitalPrestado = 0, gananciaPotencial = 0;
+
             if (!data) {
                 listaDeudoresDiv.innerHTML = '<p class="text-center text-muted">Aún no hay préstamos registrados.</p>';
+                actualizarResumen(0, 0, 0);
                 return;
             }
+
             const deudoresArray = Object.entries(data).map(([key, value]) => ({ key, ...value }));
             deudoresArray.sort((a, b) => {
                 if (a.estado === 'Pendiente' && b.estado !== 'Pendiente') return -1;
                 if (a.estado !== 'Pendiente' && b.estado === 'Pendiente') return 1;
                 return new Date(a.fecha_pago) - new Date(b.fecha_pago);
             });
+
             deudoresArray.forEach((item) => {
                 const esPendiente = item.estado === 'Pendiente';
                 const fechaPago = new Date(item.fecha_pago + 'T00:00:00');
+                const hoy = new Date();
+                hoy.setHours(0,0,0,0);
+                
+                let claseBorde = esPendiente ? 'pendiente' : 'pagado';
+                if (esPendiente && fechaPago < hoy) {
+                    claseBorde = 'vencido';
+                }
+
+                if(esPendiente){
+                    capitalPrestado += parseFloat(item.cantidad);
+                    gananciaPotencial += parseFloat(item.interes);
+                }
+
                 const totalPagar = (parseFloat(item.cantidad) + parseFloat(item.interes)).toFixed(2);
+                
                 const cardHTML = `
-                    <div class="card mb-3 ${esPendiente ? 'pendiente' : 'pagado'}">
+                    <div class="card mb-3 ${claseBorde}">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <span>${item.nombre} ${item.apellido || ''}</span>
-                            <span class="badge ${esPendiente ? 'bg-danger' : 'bg-success'}">${item.estado}</span>
+                            <span class="badge ${esPendiente ? (claseBorde === 'vencido' ? 'bg-warning' : 'bg-danger') : 'bg-success'}">${item.estado}</span>
                         </div>
                         <div class="card-body">
                             <p class="card-text">
                                 <strong>Próximo Pago:</strong> ${fechaPago.toLocaleDateString('es-PE')} <br>
                                 <strong>Monto a Pagar:</strong> S/ ${totalPagar}
                             </p>
-                            <div class="d-grid">
-                                ${esPendiente 
-                                    ? `<button class="btn btn-success" onclick="marcarPagado('${item.key}')">✅ Marcar como Pagado</button>`
-                                    : `<button class="btn btn-secondary" onclick="reactivar('${item.key}')">🔄 Reactivar para Siguiente Cobro</button>`
-                                }
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    ${esPendiente 
+                                        ? `<button class="btn btn-success" onclick="marcarPagado('${item.key}')"><i class="bi bi-check-lg"></i> Pagar</button>`
+                                        : `<button class="btn btn-secondary" onclick="reactivar('${item.key}')"><i class="bi bi-arrow-clockwise"></i> Reactivar</button>`
+                                    }
+                                </div>
+                                <div>
+                                    <button class="btn btn-outline-warning btn-sm" onclick="prepararModalParaEditar('${item.key}')"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="eliminarDeudor('${item.key}')"><i class="bi bi-trash"></i></button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 `;
                 listaDeudoresDiv.innerHTML += cardHTML;
             });
+            totalPorCobrar = capitalPrestado + gananciaPotencial;
+            actualizarResumen(totalPorCobrar, capitalPrestado, gananciaPotencial);
         });
 
-        // ------------------ 3. FUNCIONES PARA ACTUALIZAR Y GUARDAR DATOS ------------------
+        function actualizarResumen(total, capital, ganancia) {
+            document.getElementById('total-por-cobrar').textContent = `S/ ${total.toFixed(2)}`;
+            document.getElementById('capital-prestado').textContent = `S/ ${capital.toFixed(2)}`;
+            document.getElementById('ganancia-potencial').textContent = `S/ ${ganancia.toFixed(2)}`;
+        }
+
+        // FUNCIONES CRUD (Crear, Leer, Actualizar, Borrar)
         function marcarPagado(key) {
             const deudorRef = database.ref(`/prestamos/${key}`);
             deudorRef.get().then((snapshot) => {
@@ -150,30 +208,60 @@
         function reactivar(key) {
             database.ref(`/prestamos/${key}`).update({ estado: 'Pendiente' });
         }
-        
-        function guardarNuevoDeudor() {
-            const nombre = document.getElementById('nombre').value;
-            const apellido = document.getElementById('apellido').value;
-            const cantidad = parseFloat(document.getElementById('cantidad').value);
-            const interes = parseFloat(document.getElementById('interes').value);
-            const fecha_pago = document.getElementById('fecha_pago').value;
 
-            if (!nombre || !cantidad || !interes || !fecha_pago) {
+        function eliminarDeudor(key) {
+            if (confirm('¿Estás segura de que quieres eliminar este préstamo? Esta acción no se puede deshacer.')) {
+                database.ref(`/prestamos/${key}`).remove();
+            }
+        }
+        
+        function prepararModalParaAgregar() {
+            document.getElementById('modal-title').textContent = 'Agregar Nuevo Préstamo';
+            deudorForm.reset();
+            document.getElementById('deudor-id').value = '';
+            document.getElementById('guardar-btn').onclick = guardarCambios;
+        }
+
+        function prepararModalParaEditar(key) {
+            const deudorRef = database.ref(`/prestamos/${key}`);
+            deudorRef.get().then((snapshot) => {
+                if(snapshot.exists()) {
+                    const data = snapshot.val();
+                    document.getElementById('modal-title').textContent = 'Editar Préstamo';
+                    document.getElementById('deudor-id').value = key;
+                    document.getElementById('nombre').value = data.nombre;
+                    document.getElementById('apellido').value = data.apellido || '';
+                    document.getElementById('cantidad').value = data.cantidad;
+                    document.getElementById('interes').value = data.interes;
+                    document.getElementById('fecha_pago').value = data.fecha_pago;
+                    document.getElementById('guardar-btn').onclick = guardarCambios;
+                    modalElement.show();
+                }
+            });
+        }
+        
+        function guardarCambios() {
+            const key = document.getElementById('deudor-id').value;
+            const deudorData = {
+                nombre: document.getElementById('nombre').value,
+                apellido: document.getElementById('apellido').value,
+                cantidad: parseFloat(document.getElementById('cantidad').value),
+                interes: parseFloat(document.getElementById('interes').value),
+                fecha_pago: document.getElementById('fecha_pago').value,
+                estado: 'Pendiente' // Por defecto o mantener el estado anterior si se edita
+            };
+
+            if (!deudorData.nombre || !deudorData.cantidad || !deudorData.interes || !deudorData.fecha_pago) {
                 alert('Por favor, completa todos los campos obligatorios.');
                 return;
             }
 
-            const nuevoDeudor = {
-                nombre, apellido, cantidad, interes, fecha_pago,
-                estado: 'Pendiente'
-            };
-
-            deudoresRef.push(nuevoDeudor).then(() => {
-                document.getElementById('add-form').reset();
-                const modalEl = document.getElementById('addModal');
-                const modal = bootstrap.Modal.getInstance(modalEl);
-                modal.hide();
-            }).catch((error) => console.error("Error al guardar:", error));
+            if (key) { // Si hay una key, actualizamos
+                database.ref(`/prestamos/${key}`).update(deudorData).then(() => modalElement.hide());
+            } else { // Si no hay key, creamos uno nuevo
+                // Al crear, no podemos saber el estado anterior, así que se asume pendiente
+                database.ref('/prestamos').push(deudorData).then(() => modalElement.hide());
+            }
         }
     </script>
 </body>
