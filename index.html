@@ -13,6 +13,7 @@
         .pagado { border-left: 5px solid #198754; }
         .vencido { border-left: 5px solid #ffc107; background-color: #493e2b; }
         .summary-card { background-color: #2c3034; border: 1px solid #495057; }
+        .toast-container { z-index: 1100; } /* Para que la notificación aparezca encima de todo */
     </style>
 </head>
 <body>
@@ -20,37 +21,13 @@
         <h1 class="text-center mb-4">📝 Gestor de Cobranza</h1>
 
         <div class="row text-center mb-4 g-2">
-            <div class="col-sm-4">
-                <div class="card summary-card p-2">
-                    <div class="card-body">
-                        <h6 class="card-title text-info">Capital Activo</h6>
-                        <p class="fs-5 fw-bold mb-0" id="capital-activo">S/ 0.00</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-4">
-                <div class="card summary-card p-2">
-                    <div class="card-body">
-                        <h6 class="card-title text-warning">Ingreso Mensual</h6>
-                        <p class="fs-5 fw-bold mb-0" id="ingreso-mensual">S/ 0.00</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-sm-4">
-                <div class="card summary-card p-2">
-                    <div class="card-body">
-                        <h6 class="card-title text-light">Préstamos Activos</h6>
-                        <p class="fs-5 fw-bold mb-0" id="prestamos-activos">0</p>
-                    </div>
-                </div>
-            </div>
+            <div class="col-sm-4"><div class="card summary-card p-2"><div class="card-body"><h6 class="card-title text-info">Capital Activo</h6><p class="fs-5 fw-bold mb-0" id="capital-activo">S/ 0.00</p></div></div></div>
+            <div class="col-sm-4"><div class="card summary-card p-2"><div class="card-body"><h6 class="card-title text-warning">Ingreso Mensual</h6><p class="fs-5 fw-bold mb-0" id="ingreso-mensual">S/ 0.00</p></div></div></div>
+            <div class="col-sm-4"><div class="card summary-card p-2"><div class="card-body"><h6 class="card-title text-light">Préstamos Activos</h6><p class="fs-5 fw-bold mb-0" id="prestamos-activos">0</p></div></div></div>
         </div>
 
-
         <div class="d-grid gap-2 mb-4">
-            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addEditModal" onclick="prepararModalParaAgregar()">
-                <i class="bi bi-plus-circle"></i> Agregar Nuevo Préstamo
-            </button>
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addEditModal" onclick="prepararModalParaAgregar()"><i class="bi bi-plus-circle"></i> Agregar Nuevo Préstamo</button>
         </div>
 
         <div id="lista-deudores"><p class="text-center">Cargando datos...</p></div>
@@ -75,6 +52,16 @@
         </div>
     </div>
 
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="liveToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="toast-title">Notificación</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toast-body"></div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
@@ -96,7 +83,23 @@
         const deudoresRef = database.ref('/prestamos');
         const listaDeudoresDiv = document.getElementById('lista-deudores');
         const modalElement = new bootstrap.Modal(document.getElementById('addEditModal'));
-        const deudorForm = document.getElementById('add-edit-form');
+        const toastElement = new bootstrap.Toast(document.getElementById('liveToast'));
+
+        function showToast(message, title = 'Éxito', type = 'success') {
+            const toastHeader = document.querySelector('#liveToast .toast-header');
+            document.getElementById('toast-title').textContent = title;
+            document.getElementById('toast-body').textContent = message;
+            
+            // Cambia el color del encabezado según el tipo de mensaje
+            toastHeader.className = 'toast-header'; // Resetea clases
+            if (type === 'danger') {
+                toastHeader.classList.add('bg-danger', 'text-white');
+            } else {
+                toastHeader.classList.add('bg-success', 'text-white');
+            }
+
+            toastElement.show();
+        }
 
         deudoresRef.orderByChild('estado').on('value', (snapshot) => {
             listaDeudoresDiv.innerHTML = '';
@@ -142,9 +145,10 @@
                                 <strong>Capital:</strong> S/ ${parseFloat(item.cantidad).toFixed(2)} | <strong>Interés:</strong> S/ ${parseFloat(item.interes).toFixed(2)}
                             </p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <div class="btn-group">
+                                <div class="btn-group btn-group-sm">
                                     ${esPendiente 
-                                        ? `<button class="btn btn-warning" onclick="pagarInteres('${item.key}')"><i class="bi bi-coin"></i> Pagar Interés</button>
+                                        ? `<button class="btn btn-outline-secondary" onclick="retrocederUnMes('${item.key}')" title="Retroceder un mes"><i class="bi bi-arrow-counterclockwise"></i></button>
+                                           <button class="btn btn-warning" onclick="pagarInteres('${item.key}')"><i class="bi bi-coin"></i> Pagar Interés</button>
                                            <button class="btn btn-success" onclick="saldarDeuda('${item.key}')"><i class="bi bi-check-all"></i> Saldar Deuda</button>`
                                         : `<button class="btn btn-secondary" onclick="reabrirPrestamo('${item.key}')"><i class="bi bi-arrow-clockwise"></i> Reabrir Préstamo</button>`
                                     }
@@ -168,9 +172,9 @@
             document.getElementById('prestamos-activos').textContent = conteo;
         }
 
-        function avanzarUnMes(fechaString) {
+        function cambiarMes(fechaString, meses) {
             let fecha = new Date(fechaString + 'T00:00:00');
-            fecha.setMonth(fecha.getMonth() + 1);
+            fecha.setMonth(fecha.getMonth() + meses);
             return fecha.toISOString().split('T')[0];
         }
 
@@ -178,37 +182,55 @@
             const deudorRef = database.ref(`/prestamos/${key}`);
             deudorRef.get().then((snapshot) => {
                 if(snapshot.exists()) {
-                    const nuevaFecha = avanzarUnMes(snapshot.val().fecha_pago);
-                    deudorRef.update({ fecha_pago: nuevaFecha });
+                    const nuevaFecha = cambiarMes(snapshot.val().fecha_pago, 1);
+                    deudorRef.update({ fecha_pago: nuevaFecha })
+                        .then(() => showToast('Se registró el pago del interés.'));
                 }
             });
+        }
+
+        function retrocederUnMes(key) {
+            if (confirm('¿Quieres retroceder la fecha de pago a un mes antes?')) {
+                const deudorRef = database.ref(`/prestamos/${key}`);
+                deudorRef.get().then((snapshot) => {
+                    if(snapshot.exists()) {
+                        const nuevaFecha = cambiarMes(snapshot.val().fecha_pago, -1);
+                        deudorRef.update({ fecha_pago: nuevaFecha })
+                            .then(() => showToast('La fecha se ha retrocedido un mes.', 'Corrección'));
+                    }
+                });
+            }
         }
         
         function saldarDeuda(key) {
             if (confirm('¿Confirmas que se ha pagado el capital y el interés? La deuda se marcará como saldada.')) {
-                database.ref(`/prestamos/${key}`).update({ estado: 'Pagado' });
+                database.ref(`/prestamos/${key}`).update({ estado: 'Pagado' })
+                    .then(() => showToast('La deuda ha sido saldada.'));
             }
         }
 
         function reabrirPrestamo(key) {
             if (confirm('¿Quieres reabrir este préstamo? Volverá a estar pendiente.')) {
-                database.ref(`/prestamos/${key}`).update({ estado: 'Pendiente' });
+                database.ref(`/prestamos/${key}`).update({ estado: 'Pendiente' })
+                    .then(() => showToast('El préstamo se ha reabierto.'));
             }
         }
         
         function eliminarDeudor(key) {
-            if (confirm('¿Estás segura de que quieres eliminar este préstamo? Esta acción no se puede deshacer.')) {
-                database.ref(`/prestamos/${key}`).remove();
+            if (confirm('¿Estás segura de que quieres ELIMINAR este préstamo? Esta acción no se puede deshacer.')) {
+                database.ref(`/prestamos/${key}`).remove()
+                    .then(() => showToast('Préstamo eliminado permanentemente.', 'Eliminado', 'danger'));
             }
         }
         
+        // El resto de funciones (prepararModalParaAgregar, prepararModalParaEditar, guardarCambios) no necesitan cambios
+        const deudorForm = document.getElementById('add-edit-form');
         function prepararModalParaAgregar() {
             document.getElementById('modal-title').textContent = 'Agregar Nuevo Préstamo';
             deudorForm.reset();
             document.getElementById('deudor-id').value = '';
             document.getElementById('guardar-btn').onclick = guardarCambios;
         }
-
         function prepararModalParaEditar(key) {
             const deudorRef = database.ref(`/prestamos/${key}`);
             deudorRef.get().then((snapshot) => {
@@ -226,7 +248,6 @@
                 }
             });
         }
-        
         function guardarCambios() {
             const key = document.getElementById('deudor-id').value;
             const deudorData = {
@@ -236,24 +257,27 @@
                 interes: parseFloat(document.getElementById('interes').value),
                 fecha_pago: document.getElementById('fecha_pago').value,
             };
-
             if (!deudorData.nombre || isNaN(deudorData.cantidad) || isNaN(deudorData.interes) || !deudorData.fecha_pago) {
                 alert('Por favor, completa todos los campos obligatorios.');
                 return;
             }
-
             if (key) {
                 const deudorRef = database.ref(`/prestamos/${key}`);
                 deudorRef.get().then(snapshot => {
                     if(snapshot.exists()){
-                        // Al editar, mantenemos el estado que ya tenía
                         deudorData.estado = snapshot.val().estado;
-                        deudorRef.update(deudorData).then(() => modalElement.hide());
+                        deudorRef.update(deudorData).then(() => {
+                            modalElement.hide();
+                            showToast('Préstamo actualizado con éxito.');
+                        });
                     }
                 });
             } else {
                 deudorData.estado = 'Pendiente';
-                database.ref('/prestamos').push(deudorData).then(() => modalElement.hide());
+                database.ref('/prestamos').push(deudorData).then(() => {
+                    modalElement.hide();
+                    showToast('Nuevo préstamo agregado.');
+                });
             }
         }
     </script>
