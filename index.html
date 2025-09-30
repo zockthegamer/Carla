@@ -1,491 +1,180 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8" />
-  <title>Para Valery 💛 — Un regalo de Josue</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <style>
-    :root{
-      --bg1:#fff0f5; --bg2:#ffe4b5; --accent:#ff69b4; --accent2:#ffb6c1;
-      --gold:#FFD27D;
-    }
-    html,body{height:100%;margin:0;font-family:"Segoe UI",Tahoma,Arial;overflow:hidden;}
-    body{
-      display:flex;align-items:center;justify-content:center;
-      background: linear-gradient(135deg,var(--bg1),var(--bg2));
-      flex-direction:column;
-    }
-    .stage{position:relative;width:100%;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;overflow:hidden;}
-    #pregunta{font-size:28px;font-weight:700;color:#7b1f2d;text-align:center;}
-    .controls{display:flex;gap:20px;align-items:center;justify-content:center;position:relative;}
-    .btn{padding:14px 28px;border-radius:12px;border:none;font-size:20px;font-weight:800;cursor:pointer;
-      box-shadow:0 8px 18px rgba(0,0,0,0.12);transition:all 220ms ease;user-select:none;}
-    #si{background:linear-gradient(180deg,var(--accent),var(--accent2));color:white;transform:scale(1);}
-    #no{background:#7f8c8d;color:white;position:absolute;left:60%;top:50%;transform:translate(-50%,-50%);}
-    @keyframes latido {0%{transform:scale(1);}25%{transform:scale(1.25);}50%{transform:scale(1.08);}75%{transform:scale(1.34);}100%{transform:scale(1);}}
-    .regalo{display:none;font-size:110px;cursor:pointer;z-index:50;}
-    .flores{display:none;text-align:center;z-index:50;color:#b22222;}
-    .mensaje{font-size:26px;margin-top:12px;font-weight:700;color:#b22222;}
-    .extra{font-size:18px;color:#a64d2a;margin-top:6px;font-style:italic;}
-    .poema{display:none;max-width:900px;text-align:center;padding:20px;border-radius:16px;
-      background:rgba(255,255,255,0.6);box-shadow:0 8px 30px rgba(0,0,0,0.08);z-index:45;}
-    .typewriter{font-size:20px;color:#6b0a1a;min-height:72px;}
-    .photos{display:none;gap:10px;align-items:center;justify-content:center;z-index:45;flex-wrap:wrap;margin-top:20px;}
-    .photo{width:200px;height:140px;border-radius:12px;object-fit:cover;box-shadow:0 6px 18px rgba(0,0,0,0.12);
-      cursor:pointer;transition:transform 0.3s ease;}
-    .photo:hover{transform:scale(1.08);}
-    .contador{position:absolute;top:18px;left:18px;background:rgba(255,255,255,0.7);padding:8px 12px;border-radius:12px;font-weight:700;color:#8a1a2b;}
-    .nombreFinal{display:none;position:fixed;bottom:24px;right:24px;padding:12px 18px;border-radius:999px;
-      background:linear-gradient(90deg,#ffd6e8,#fff1f8);font-weight:900;color:#9c1642;animation:brillar 2.5s infinite;}
-    @keyframes brillar{0%{filter:brightness(1)}50%{filter:brightness(1.3)}100%{filter:brightness(1)}}
-    .corazon{position:absolute;font-size:20px;pointer-events:none;z-index:5;opacity:0.95;}
-    canvas{position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:30;}
-
-    /* Contenedor para botón + slider (área "hotspot") */
-    .audioControl{
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      z-index: 95;
-      display: flex;
-      flex-direction: column;
-      align-items: flex-end;
-      gap: 8px;
-      padding: 6px; /* aumenta zona de hover */
-      border-radius: 12px;
-      background: rgba(255,255,255,0.02);
-    }
-    .song-selector {
-        padding: 6px 10px;
-        border-radius: 8px;
-        border: 1px solid #ccc;
-        background-color: white;
-        font-weight: 600;
-        cursor: pointer;
-        font-size: 14px;
-        color: #555;
-    }
-
-    .mutebtn{
-      background:rgba(255,255,255,0.85);
-      padding:8px;
-      border-radius:10px;
-      font-weight:800;
-      cursor:pointer;
-      user-select:none;
-    }
-
-    /* --- Slider oculto por defecto --- */
-    .volumeSlider{
-      width:140px;
-      opacity:0;
-      pointer-events:none;
-      transform: translateY(-6px);
-      transition: opacity 0.28s ease, transform 0.28s ease;
-      -webkit-appearance: none;
-    }
-    .volumeSlider.show{
-      opacity:1;
-      pointer-events:auto;
-      transform: translateY(0);
-    }
-
-    /* Estilo rápido para el slider */
-    .volumeSlider::-webkit-slider-runnable-track{height:6px;border-radius:6px;background:linear-gradient(90deg,#ff69b4,#ffd27d);}
-    .volumeSlider::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.2);margin-top:-4px;}
-    .volumeSlider::-moz-range-track{height:6px;border-radius:6px;background:linear-gradient(90deg,#ff69b4,#ffd27d);}
-    .volumeSlider::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:white;box-shadow:0 1px 3px rgba(0,0,0,0.2);}
-
-    .footerNote{position:fixed;bottom:8px;left:12px;color:#5b0b22;font-weight:700;opacity:0.85;}
-    @media (max-width:720px){.photo{width:130px;height:90px;}#pregunta{font-size:20px}.btn{font-size:16px;padding:10px 16px;}
-      .volumeSlider{width:100px;}
-    }
-
-    /* Modal de foto/video */
-    .lightbox {
-      display: none;
-      position: fixed;
-      z-index: 9999;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85);
-      align-items: center;
-      justify-content: center;
-    }
-    .lightbox-content {
-      max-width: 90%;
-      max-height: 85%;
-      border-radius: 14px;
-      box-shadow: 0 0 20px rgba(0,0,0,0.4);
-    }
-    .lightbox video {
-      max-width: 90%;
-      max-height: 85%;
-      border-radius: 14px;
-    }
-    .lightbox-close {
-      position: absolute;
-      top: 20px; right: 30px;
-      font-size: 32px;
-      color: white;
-      cursor: pointer;
-      font-weight: bold;
-      text-shadow: 0 2px 6px rgba(0,0,0,0.5);
-    }
-    
-    /* Estilos para el formulario de subida */
-    .upload-container {
-        display: none; /* Se mostrará junto con las fotos */
-        margin-top: 20px;
-        padding: 15px;
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 12px;
-        z-index: 50;
-    }
-    #upload-form {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-    }
-    #upload-form input[type="file"] {
-        color: #6b0a1a;
-    }
-    .upload-btn {
-        padding: 8px 16px;
-        border-radius: 8px;
-        border: none;
-        background: var(--accent);
-        color: white;
-        font-weight: bold;
-        cursor: pointer;
-    }
-    #status-message {
-        font-size: 14px;
-        margin-top: 8px;
-        color: #7b1f2d;
-        font-weight: 600;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestor de Cobranza</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .card { border-radius: 0.75rem; }
+        .pendiente { border-left: 5px solid #dc3545; } /* Rojo */
+        .pagado { border-left: 5px solid #198754; }    /* Verde */
+    </style>
 </head>
 <body>
-  <div class="contador" id="contador">Días juntos: 0</div>
+    <div class="container mt-4 mb-5">
+        <h1 class="text-center mb-4">📝 Lista de Cobranza</h1>
 
-  <div id="audioControl" class="audioControl" aria-hidden="false">
-    <div class="mutebtn" id="mutebtn">🔈 Música: silenciada</div>
-    <select id="songSelector" class="song-selector" aria-label="Seleccionar canción">
-      <option value="viernes13.mp3">Viernes 13</option>
-      <option value="jueves12.mp3">Princesa Ken-Y</option>
-      <option value="miercoles11.mp3">Ponte LOKITA</option>
-    </select>
-    <input id="volumeSlider" class="volumeSlider" type="range" min="0" max="1" step="0.01" value="1" aria-label="Volumen">
-  </div>
+        <div class="d-grid gap-2 mb-4">
+            <button type="button" class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#addModal">
+                + Agregar Nuevo Préstamo
+            </button>
+        </div>
 
-  <div class="stage" id="stage">
-    <div id="pregunta">¿Quieres abrir este regalo de tu novio Josue? 💝</div>
-    <div class="controls">
-      <button class="btn" id="si">Sí &lt;3</button>
-      <button class="btn" id="no">No :(</button>
-    </div>
-    <div class="regalo" id="regalo">🎁</div>
-    <div class="flores" id="flores">
-      <div style="font-size:64px">🌻🌷🌻🌹🌻</div>
-      <div class="mensaje">Te amo mi amor Valery 💛</div>
-      <div class="extra">Eres mi todo. Gracias por existir 🌹</div>
-    </div>
-    <div class="poema" id="poema"><div class="typewriter" id="typewriter"></div></div>
-    
-    <div class="photos" id="photos"></div>
-    
-    <div class="upload-container" id="upload-container">
-        <form id="upload-form">
-            <label for="image-input">Añadir recuerdo:</label>
-            <input type="file" id="image-input" accept="image/*,video/*" required>
-            <button type="submit" class="upload-btn">Subir</button>
-        </form>
-        <div id="status-message"></div>
+        <div id="lista-deudores">
+            <p class="text-center">Cargando datos...</p>
+        </div>
     </div>
 
-    <div class="nombreFinal" id="nombreFinal">Valery 💛</div>
-    <div class="footerNote">Un detalle de Josue — Hecho con ♥</div>
-  </div>
-  <canvas id="confetti"></canvas>
+    <div class="modal fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addModalLabel">Nuevo Préstamo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-form">
+                        <div class="mb-3">
+                            <label for="nombre" class="form-label">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="apellido" class="form-label">Apellido (Opcional)</label>
+                            <input type="text" class="form-control" id="apellido">
+                        </div>
+                        <div class="mb-3">
+                            <label for="cantidad" class="form-label">Cantidad Prestada (S/)</label>
+                            <input type="number" step="0.01" class="form-control" id="cantidad" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="interes" class="form-label">Interés Mensual (S/)</label>
+                            <input type="number" step="0.01" class="form-control" id="interes" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="fecha_pago" class="form-label">Fecha del Primer Pago</label>
+                            <input type="date" class="form-control" id="fecha_pago" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="guardarNuevoDeudor()">Guardar Préstamo</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-  <audio id="bgMusic" loop></audio>
 
-  <div class="lightbox" id="lightbox">
-    <span class="lightbox-close" id="lightbox-close">&times;</span>
-    <img id="lightbox-img" class="lightbox-content" />
-    <video id="lightbox-video" controls loop></video>
-  </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.15.0/firebase-database-compat.js"></script>
 
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+    <script>
+        // ------------------ 1. CONFIGURACIÓN DE FIREBASE (¡YA ESTÁ LISTA CON TUS DATOS!) ------------------
+        const firebaseConfig = {
+            apiKey: "AIzaSyDFu2IrRdTF_BHAaM6GzrGQhzHejGzckDY",
+            authDomain: "gestor-cobranza-c9ade.firebaseapp.com",
+            databaseURL: "https://gestor-cobranza-c9ade-default-rtdb.firebaseio.com",
+            projectId: "gestor-cobranza-c9ade",
+            storageBucket: "gestor-cobranza-c9ade.appspot.com",
+            messagingSenderId: "697644692343",
+            appId: "1:697644692343:web:dcb5c44b46c7c740ce6772",
+            measurementId: "G-0CLMFD358B"
+        };
+        // ----------------------------------------------------------------
 
-  <script>
-    // --- TUS CREDENCIALES DE FIREBASE ---
-    const firebaseConfig = {
-      apiKey: "AIzaSyCuCBarj_3H2FOe2FSEmRJ5FGynWZhjWu4",
-      authDomain: "valky090725.firebaseapp.com",
-      projectId: "valky090725",
-      storageBucket: "valky090725.firebasestorage.app",
-      messagingSenderId: "562892182179",
-      appId: "1:562892182179:web:2a4658e2ebd2ee8d90a516",
-      measurementId: "G-9BKRM3K7Q9"
-    };
+        // Inicializar la app de Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const deudoresRef = database.ref('/prestamos');
+        const listaDeudoresDiv = document.getElementById('lista-deudores');
 
-    // Inicializar Firebase
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
-    const storage = firebase.storage();
-  </script>
+        // ------------------ 2. LEER Y MOSTRAR DATOS EN TIEMPO REAL ------------------
+        deudoresRef.orderByChild('estado').on('value', (snapshot) => {
+            listaDeudoresDiv.innerHTML = '';
+            const data = snapshot.val();
+            if (!data) {
+                listaDeudoresDiv.innerHTML = '<p class="text-center text-muted">Aún no hay préstamos registrados.</p>';
+                return;
+            }
+            const deudoresArray = Object.entries(data).map(([key, value]) => ({ key, ...value }));
+            deudoresArray.sort((a, b) => {
+                if (a.estado === 'Pendiente' && b.estado !== 'Pendiente') return -1;
+                if (a.estado !== 'Pendiente' && b.estado === 'Pendiente') return 1;
+                return new Date(a.fecha_pago) - new Date(b.fecha_pago);
+            });
+            deudoresArray.forEach((item) => {
+                const esPendiente = item.estado === 'Pendiente';
+                const fechaPago = new Date(item.fecha_pago + 'T00:00:00');
+                const totalPagar = (parseFloat(item.cantidad) + parseFloat(item.interes)).toFixed(2);
+                const cardHTML = `
+                    <div class="card mb-3 ${esPendiente ? 'pendiente' : 'pagado'}">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <span>${item.nombre} ${item.apellido || ''}</span>
+                            <span class="badge ${esPendiente ? 'bg-danger' : 'bg-success'}">${item.estado}</span>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">
+                                <strong>Próximo Pago:</strong> ${fechaPago.toLocaleDateString('es-PE')} <br>
+                                <strong>Monto a Pagar:</strong> S/ ${totalPagar}
+                            </p>
+                            <div class="d-grid">
+                                ${esPendiente 
+                                    ? `<button class="btn btn-success" onclick="marcarPagado('${item.key}')">✅ Marcar como Pagado</button>`
+                                    : `<button class="btn btn-secondary" onclick="reactivar('${item.key}')">🔄 Reactivar para Siguiente Cobro</button>`
+                                }
+                            </div>
+                        </div>
+                    </div>
+                `;
+                listaDeudoresDiv.innerHTML += cardHTML;
+            });
+        });
 
-  <script>
-  const relationshipStart = '2025-07-09';
-  
-  const poemLines = [
-    "En tus ojos encontré mi amanecer,",
-    "en tu risa la canción que quiero aprender.",
-    "Eres mi calma y mi fuego a la vez,",
-    "Valery, por siempre te voy a querer.",
-    "Valery, te amo ♥ mi amor."
-  ];
-
-  const photosEl = document.getElementById("photos");
-  const uploadContainer = document.getElementById("upload-container");
-
-  async function initPhotos(){
-    photosEl.innerHTML = ''; // Limpiar galería antes de cargar
-    const snapshot = await db.collection("photos").orderBy("timestamp", "asc").get();
-    
-    snapshot.forEach(doc => {
-      const item = doc.data();
-      if(item.type.startsWith("image")){
-        const img=document.createElement("img");
-        img.src=item.url; img.className="photo";
-        img.addEventListener("click",()=>openLightbox("img",item.url));
-        photosEl.appendChild(img);
-      } else if(item.type.startsWith("video")){
-        const vid=document.createElement("video");
-        vid.src=item.url; vid.className="photo";
-        vid.autoplay=true; vid.loop=true; vid.muted=true; vid.playsInline=true;
-        vid.addEventListener("click",()=>openLightbox("video",item.url));
-        photosEl.appendChild(vid);
-      }
-    });
-
-    photosEl.style.display="flex";
-    uploadContainer.style.display="block";
-  }
-
-  function updateDaysCounter(){
-    const start=new Date(relationshipStart+"T00:00:00");
-    const now=new Date();
-    const diff=Math.floor((now-start)/(1000*60*60*24));
-    document.getElementById("contador").textContent="Días juntos: "+(diff>=0?diff:0);
-  }
-  updateDaysCounter();
-
-  const si=document.getElementById("si"), no=document.getElementById("no"), regalo=document.getElementById("regalo"),
-  pregunta=document.getElementById("pregunta"), flores=document.getElementById("flores"), poema=document.getElementById("poema"),
-  typewriter=document.getElementById("typewriter"), nombreFinal=document.getElementById("nombreFinal");
-
-  let clicks=0, siScale=1;
-  no.addEventListener("mouseover",()=>{
-    no.style.left=Math.random()*500+"px";
-    no.style.top=Math.random()*300+"px";
-    siScale += 0.15;
-    si.style.transform=`scale(${siScale})`;
-    si.style.animation="latido 0.8s ease-in-out";
-  });
-
-  si.addEventListener("click",()=>{
-    pregunta.style.display="none";si.style.display="none";no.style.display="none";regalo.style.display="block";
-  });
-  regalo.addEventListener("click",()=>{
-    clicks++;
-    if(clicks===3){
-      regalo.style.display="none";
-      flores.style.display="block";
-      showPoem();
-      initPhotos();
-      nombreFinal.style.display="block";
-      launchFloatingHearts();
-    }
-  });
-
-  function showPoem(){
-    poema.style.display="block";
-    let i=0;
-    function typeLine(){
-      if(i>=poemLines.length)return;
-      let line=poemLines[i],j=0;
-      let inter=setInterval(()=>{
-        typewriter.textContent=line.slice(0,j+1);
-        j++;
-        if(j>=line.length){clearInterval(inter);i++;setTimeout(typeLine,700);} }
-      ,50);
-    }
-    typeLine();
-  }
-
-  function launchFloatingHearts(){
-    setInterval(()=>{
-      const heart = document.createElement("div");
-      heart.className = "corazon";
-      heart.textContent = "💖";
-      heart.style.left = Math.random()*window.innerWidth + "px";
-      heart.style.bottom = "-20px";
-      heart.style.position = "fixed";
-      heart.style.fontSize = Math.random()*20+20 + "px";
-      document.body.appendChild(heart);
-      let y = -20;
-      const anim = setInterval(()=>{
-        y += 2;
-        heart.style.bottom = y+"px";
-        if(y > window.innerHeight+50){
-          clearInterval(anim);
-          heart.remove();
+        // ------------------ 3. FUNCIONES PARA ACTUALIZAR Y GUARDAR DATOS ------------------
+        function marcarPagado(key) {
+            const deudorRef = database.ref(`/prestamos/${key}`);
+            deudorRef.get().then((snapshot) => {
+                if(snapshot.exists()) {
+                    const deudor = snapshot.val();
+                    let fechaActual = new Date(deudor.fecha_pago + 'T00:00:00');
+                    fechaActual.setMonth(fechaActual.getMonth() + 1);
+                    const nuevaFecha = fechaActual.toISOString().split('T')[0];
+                    deudorRef.update({ estado: 'Pagado', fecha_pago: nuevaFecha });
+                }
+            });
         }
-      },30);
-    },600);
-  }
 
-  const audioControl = document.getElementById("audioControl");
-  const mutebtn = document.getElementById("mutebtn");
-  const bgMusic = document.getElementById("bgMusic");
-  const volumeSlider = document.getElementById("volumeSlider");
-  const songSelector = document.getElementById("songSelector");
+        function reactivar(key) {
+            database.ref(`/prestamos/${key}`).update({ estado: 'Pendiente' });
+        }
+        
+        function guardarNuevoDeudor() {
+            const nombre = document.getElementById('nombre').value;
+            const apellido = document.getElementById('apellido').value;
+            const cantidad = parseFloat(document.getElementById('cantidad').value);
+            const interes = parseFloat(document.getElementById('interes').value);
+            const fecha_pago = document.getElementById('fecha_pago').value;
 
-  let hideTimer = null;
-  function clearHideTimer(){ if(hideTimer) { clearTimeout(hideTimer); hideTimer = null; } }
-  function scheduleHide(ms = 1500){
-    clearHideTimer();
-    hideTimer = setTimeout(()=>{
-      volumeSlider.classList.remove("show");
-    }, ms);
-  }
-  function showSlider(){ clearHideTimer(); volumeSlider.classList.add("show"); }
-  function hideSliderImmediate(){ clearHideTimer(); volumeSlider.classList.remove("show"); }
+            if (!nombre || !cantidad || !interes || !fecha_pago) {
+                alert('Por favor, completa todos los campos obligatorios.');
+                return;
+            }
 
-  window.addEventListener('load', () => {
-    bgMusic.src = songSelector.value;
-  });
+            const nuevoDeudor = {
+                nombre, apellido, cantidad, interes, fecha_pago,
+                estado: 'Pendiente'
+            };
 
-  songSelector.addEventListener("change", (event) => {
-    const newSong = event.target.value;
-    bgMusic.src = newSong;
-    bgMusic.load();
-    bgMusic.play().catch(()=>{});
-    mutebtn.textContent = "🔊 Música: reproduciendo";
-    showSlider();
-    scheduleHide(3000);
-  });
-  
-  mutebtn.addEventListener("click", () => {
-    if (bgMusic.paused) {
-      bgMusic.play().catch(()=>{});
-      mutebtn.textContent = "🔊 Música: reproduciendo";
-      showSlider();
-      scheduleHide(3000);
-    } else {
-      bgMusic.pause();
-      mutebtn.textContent = "🔈 Música: silenciada";
-      hideSliderImmediate();
-    }
-  });
-
-  bgMusic.addEventListener("play", ()=> {
-    mutebtn.textContent = "🔊 Música: reproduciendo";
-  });
-  bgMusic.addEventListener("pause", ()=> {
-    mutebtn.textContent = "🔈 Música: silenciada";
-    hideSliderImmediate();
-  });
-
-  audioControl.addEventListener("mouseenter", () => {
-    if (!bgMusic.paused) {
-      showSlider();
-    }
-  });
-  audioControl.addEventListener("mouseleave", () => {
-    if (!bgMusic.paused) {
-      scheduleHide(1200);
-    }
-  });
-
-  volumeSlider.addEventListener("mouseenter", () => { clearHideTimer(); showSlider(); });
-  volumeSlider.addEventListener("mouseleave", () => { if (!bgMusic.paused) scheduleHide(1200); });
-
-  volumeSlider.addEventListener("input", () => {
-    bgMusic.volume = parseFloat(volumeSlider.value);
-  });
-
-  const lightbox=document.getElementById("lightbox");
-  const lightboxImg=document.getElementById("lightbox-img");
-  const lightboxVideo=document.getElementById("lightbox-video");
-  const closeBtn=document.getElementById("lightbox-close");
-
-  function openLightbox(type,src){
-    lightbox.style.display="flex";
-    if(type==="img"){
-      lightboxImg.style.display="block";
-      lightboxVideo.style.display="none";
-      lightboxImg.src=src;
-    } else {
-      lightboxImg.style.display="none";
-      lightboxVideo.style.display="block";
-      lightboxVideo.src=src;
-      lightboxVideo.play();
-    }
-  }
-
-  closeBtn.addEventListener("click",()=>{
-    lightbox.style.display="none";
-    lightboxImg.src="";
-    lightboxVideo.pause();
-    lightboxVideo.src="";
-  });
-
-  lightbox.addEventListener("click",(e)=>{
-    if(e.target===lightbox){
-      closeBtn.click();
-    }
-  });
-
-  const uploadForm = document.getElementById('upload-form');
-  const imageInput = document.getElementById('image-input');
-  const statusMessage = document.getElementById('status-message');
-
-  uploadForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const file = imageInput.files[0];
-    if (!file) return;
-
-    statusMessage.textContent = 'Subiendo, un momento por favor...';
-
-    try {
-      const fileName = `${Date.now()}_${file.name}`;
-      const storageRef = storage.ref(`photos/${fileName}`);
-      
-      const uploadTask = await storageRef.put(file);
-      
-      const imageUrl = await uploadTask.ref.getDownloadURL();
-      
-      await db.collection('photos').add({
-        url: imageUrl,
-        type: file.type,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      statusMessage.textContent = '¡Recuerdo añadido con éxito!';
-      uploadForm.reset();
-      initPhotos();
-
-    } catch (error) {
-      console.error("Error al subir el archivo: ", error);
-      statusMessage.textContent = 'Hubo un error al subir el archivo.';
-    }
-  });
-  </script>
+            deudoresRef.push(nuevoDeudor).then(() => {
+                document.getElementById('add-form').reset();
+                const modalEl = document.getElementById('addModal');
+                const modal = bootstrap.Modal.getInstance(modalEl);
+                modal.hide();
+            }).catch((error) => console.error("Error al guardar:", error));
+        }
+    </script>
 </body>
 </html>
