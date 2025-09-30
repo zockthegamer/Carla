@@ -1,6 +1,6 @@
 {
-    "name": "Gestor de Cobranza",
-    "short_name": "Cobranza",
+    "name": "Préstamos Carla",
+    "short_name": "PrestaCarla",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#212529",
@@ -13,4 +13,5 @@
             "type": "image/png"
         }
     ]
+
 }
