@@ -155,4 +155,36 @@
             const mes = document.getElementById('hidden-month').value;
             const anio = document.getElementById('hidden-year').value;
             // Formatear a YYYY-MM-DD
-            const fechaFinal = new Date(anio, mes, dia).toISOString
+            const fechaFinal = new Date(anio, mes, dia).toISOString().split('T')[0];
+
+            const deudorData = {
+                nombre: document.getElementById('nombre').value,
+                apellido: document.getElementById('apellido').value,
+                telefono: document.getElementById('telefono').value,
+                cantidad: parseFloat(document.getElementById('cantidad').value),
+                interes: parseFloat(document.getElementById('interes').value),
+                fecha_pago: fechaFinal,
+            };
+            // ... (El resto de la función de guardar no cambia) ...
+            if (!deudorData.nombre || isNaN(deudorData.cantidad) || isNaN(deudorData.interes) || !deudorData.fecha_pago) { alert('Por favor, completa todos los campos obligatorios.'); return; } if (key) { const deudorRef = deudoresRef.child(key); deudorRef.get().then(snapshot => { if(snapshot.exists()){ deudorData.estado = snapshot.val().estado; deudorRef.update(deudorData).then(() => { modalElement.hide(); showToast('Préstamo actualizado con éxito.'); }); } }); } else { deudorData.estado = 'Pendiente'; deudoresRef.push(deudorData).then(() => { modalElement.hide(); showToast('Nuevo préstamo agregado.'); }); }
+        }
+        // ====================== FIN SECCIÓN MODIFICADA ======================
+
+        // ... (El resto de funciones no necesitan cambios) ...
+        async function mostrarHistorial(key, nombre) { document.getElementById('history-modal-title').textContent = `Historial de ${nombre}`; const historyBody = document.getElementById('history-modal-body'); historyBody.innerHTML = '<p>Cargando historial...</p>'; historyModalElement.show(); const snapshot = await historialRef.child(key).orderByChild('fechaPago').once('value'); if (snapshot.exists()) { historyBody.innerHTML = '<ul class="list-group"></ul>'; const ul = historyBody.querySelector('ul'); snapshot.forEach(pagoSnap => { const pago = pagoSnap.val(); const fecha = new Date(pago.fechaPago).toLocaleString('es-PE'); const li = document.createElement('li'); li.className = 'list-group-item'; li.textContent = `Pago de S/ ${parseFloat(pago.monto).toFixed(2)} registrado el ${fecha}`; ul.prepend(li); }); } else { historyBody.innerHTML = '<p class="text-center text-muted">No hay pagos registrados.</p>'; } }
+        function handleLogin() { const email = document.getElementById('email').value; const password = document.getElementById('password').value; authErrorDiv.classList.add('d-none'); auth.signInWithEmailAndPassword(email, password).catch(error => { authErrorDiv.textContent = error.message; authErrorDiv.classList.remove('d-none'); }); }
+        function handleRegister() { const email = document.getElementById('email').value; const password = document.getElementById('password').value; authErrorDiv.classList.add('d-none'); auth.createUserWithEmailAndPassword(email, password).catch(error => { authErrorDiv.textContent = error.message; authErrorDiv.classList.remove('d-none'); }); }
+        function handleLogout() { auth.signOut(); }
+        function handleForgotPassword(event) { event.preventDefault(); forgotPasswordModalElement.show(); }
+        function sendResetEmail() { const email = document.getElementById('reset-email').value; if (!email) { alert('Por favor, ingresa tu correo.'); return; } auth.sendPasswordResetEmail(email).then(() => { forgotPasswordModalElement.hide(); showToast('Se ha enviado un enlace a tu correo.', 'Revisa tu bandeja de entrada'); }).catch((error) => { alert(error.message); }); }
+        function actualizarResumen(capital, ingreso, conteo) { document.getElementById('capital-activo').textContent = `S/ ${capital.toFixed(2)}`; document.getElementById('ingreso-mensual').textContent = `S/ ${ingreso.toFixed(2)}`; document.getElementById('prestamos-activos').textContent = conteo; }
+        function cambiarMes(fechaString, meses) { let fecha = new Date(fechaString + 'T00:00:00'); fecha.setMonth(fecha.getMonth() + meses); return fecha.toISOString().split('T')[0]; }
+        function retrocederUnMes(key) { if (confirm('¿Quieres retroceder la fecha de pago a un mes antes? Esto también eliminará el último registro del historial.')) { const deudorRef = deudoresRef.child(key); deudorRef.get().then((snapshot) => { if(snapshot.exists()) { const nuevaFecha = cambiarMes(snapshot.val().fecha_pago, -1); deudorRef.update({ fecha_pago: nuevaFecha }).then(() => { historialRef.child(key).orderByChild('fechaPago').limitToLast(1).once('value', (snap) => { if(snap.exists()){ const lastKey = Object.keys(snap.val())[0]; historialRef.child(key).child(lastKey).remove(); } }); showToast('La fecha se ha retrocedido un mes.', 'Corrección'); }); } }); } }
+        function saldarDeuda(key) { if (confirm('¿Confirmas que se ha pagado el capital y el interés? La deuda se marcará como saldada.')) { deudoresRef.child(key).update({ estado: 'Pagado' }).then(() => showToast('La deuda ha sido saldada.')); } }
+        function reabrirPrestamo(key) { if (confirm('¿Quieres reabrir este préstamo? Volverá a estar pendiente.')) { deudoresRef.child(key).update({ estado: 'Pendiente' }).then(() => showToast('El préstamo se ha reabierto.')); } }
+        function eliminarDeudor(key) { if (confirm('¿Estás segura de que quieres ELIMINAR este préstamo? Esta acción y su historial se borrarán permanentemente.')) { deudoresRef.child(key).remove().then(() => { historialRef.child(key).remove(); showToast('Préstamo eliminado permanentemente.', 'Eliminado', 'danger'); }); } }
+        function showToast(message, title = 'Éxito', type = 'success') { const toastHeader = document.querySelector('#liveToast .toast-header'); document.getElementById('toast-title').textContent = title; document.getElementById('toast-body').textContent = message; toastHeader.className = 'toast-header'; if (type === 'danger') { toastHeader.classList.add('bg-danger', 'text-white'); } else { toastHeader.classList.add('bg-success', 'text-white'); } toastElement.show(); }
+        if ('serviceWorker' in navigator) { navigator.serviceWorker.register('sw.js').then(reg => console.log('SW registrado')).catch(err => console.log('Error SW', err)); }
+    </script>
+</body>
+</html>
