@@ -39,9 +39,9 @@
                             <div class="mb-3">
                                 <label class="form-label">Fecha de Pago</label>
                                 <div class="row g-2">
-                                    <div class="col-4"><select class="form-select" id="dia_pago"></select></div>
-                                    <div class="col-5"><select class="form-select" id="mes_pago"></select></div>
-                                    <div class="col-3"><select class="form-select" id="anio_pago"></select></div>
+                                    <div class="col-4"><select class="form-select" id="dia_pago" aria-label="Día"></select></div>
+                                    <div class="col-5"><select class="form-select" id="mes_pago" aria-label="Mes"></select></div>
+                                    <div class="col-3"><select class="form-select" id="anio_pago" aria-label="Año"></select></div>
                                 </div>
                             </div>
                             </form>
@@ -78,20 +78,10 @@
         const diaSelect = document.getElementById('dia_pago');
         const mesSelect = document.getElementById('mes_pago');
         const anioSelect = document.getElementById('anio_pago');
-        
-        // Event listeners para actualizar los días cuando cambia el mes o año
-        mesSelect.addEventListener('change', () => popularDias(anioSelect.value, mesSelect.value));
-        anioSelect.addEventListener('change', () => popularDias(anioSelect.value, mesSelect.value));
-        // ====================== FIN SECCIÓN NUEVA ======================
+        const mesesNombres = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
 
-        auth.onAuthStateChanged(user => { /* ... (sin cambios) ... */ if (user) { currentUser = user; authContainer.classList.add('d-none'); appContainer.classList.remove('d-none'); deudoresRef = database.ref(`/prestamos/${user.uid}`); historialRef = database.ref(`/historialPagos/${user.uid}`); cargarDatosDeUsuario(); } else { currentUser = null; appContainer.classList.add('d-none'); authContainer.classList.remove('d-none'); deudoresRef = null; historialRef = null; } });
-        searchBar.addEventListener('input', (e) => { const searchTerm = e.target.value.toLowerCase(); const deudoresFiltrados = deudoresCache.filter(deudor => (deudor.nombre.toLowerCase().includes(searchTerm) || (deudor.apellido && deudor.apellido.toLowerCase().includes(searchTerm)))); renderDeudores(deudoresFiltrados); });
-        function cargarDatosDeUsuario() { /* ... (sin cambios) ... */ }
-        function renderDeudores(deudores) { /* ... (sin cambios) ... */ }
-        function pagarInteres(key) { /* ... (sin cambios) ... */ }
-        
-        // ===================== INICIO SECCIÓN MODIFICADA =====================
         function popularDias(year, month, selectedDay) {
+            const diasPrevios = diaSelect.value || selectedDay;
             diaSelect.innerHTML = '';
             const daysInMonth = new Date(year, parseInt(month) + 1, 0).getDate();
             for (let i = 1; i <= daysInMonth; i++) {
@@ -100,37 +90,60 @@
                 option.textContent = i;
                 diaSelect.appendChild(option);
             }
-            if (selectedDay) {
-                // Asegurarse de no seleccionar un día que no existe (ej. 31 en febrero)
-                diaSelect.value = Math.min(selectedDay, daysInMonth);
-            }
+            diaSelect.value = Math.min(diasPrevios, daysInMonth);
         }
 
-        function popularSelectoresFecha(targetDate) {
-            const anioActual = new Date().getFullYear();
+        mesSelect.addEventListener('change', () => popularDias(anioSelect.value, mesSelect.value));
+        anioSelect.addEventListener('change', () => popularDias(anioSelect.value, mesSelect.value));
+
+        function popularSelectoresFecha(targetDate, mode = 'add') {
+            const currentYear = targetDate.getFullYear();
+            const currentMonth = targetDate.getMonth();
+            const currentDay = targetDate.getDate();
+
             anioSelect.innerHTML = '';
-            [anioActual, anioActual + 1].forEach(year => {
+            let years = new Set();
+            if (mode === 'edit') {
+                 years.add(currentYear - 1);
+            }
+            years.add(new Date().getFullYear());
+            years.add(new Date().getFullYear() + 1);
+             if (mode === 'edit') {
+                years.add(currentYear);
+            }
+            Array.from(years).sort().forEach(year => {
                 const option = document.createElement('option');
                 option.value = year;
                 option.textContent = year;
                 anioSelect.appendChild(option);
             });
-
+            
             mesSelect.innerHTML = '';
-            const meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-            for (let i = 0; i < 12; i++) {
-                let date = new Date();
-                date.setMonth(date.getMonth() + i);
-                const option = document.createElement('option');
-                option.value = date.getMonth();
-                // Incluye el año en la opción si cambia
-                option.textContent = `${meses[date.getMonth()]} ${date.getFullYear() !== anioActual ? date.getFullYear() : ''}`;
-                mesSelect.appendChild(option);
+            if (mode === 'add') {
+                const hoy = new Date();
+                const mesAnterior = new Date(hoy); mesAnterior.setMonth(hoy.getMonth() - 1);
+                const mesSiguiente = new Date(hoy); mesSiguiente.setMonth(hoy.getMonth() + 1);
+                const opcionesMes = [mesAnterior, hoy, mesSiguiente];
+                
+                opcionesMes.forEach(date => {
+                    const option = document.createElement('option');
+                    option.value = date.getMonth();
+                    option.dataset.year = date.getFullYear();
+                    option.textContent = `${mesesNombres[date.getMonth()]} ${date.getFullYear()}`;
+                    mesSelect.appendChild(option);
+                });
+            } else { // Modo Editar: muestra todos los meses
+                for (let i = 0; i < 12; i++) {
+                    const option = document.createElement('option');
+                    option.value = i;
+                    option.textContent = mesesNombres[i];
+                    mesSelect.appendChild(option);
+                }
             }
-
-            anioSelect.value = targetDate.getFullYear();
-            mesSelect.value = targetDate.getMonth();
-            popularDias(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+            
+            anioSelect.value = currentYear;
+            mesSelect.value = currentMonth;
+            popularDias(currentYear, currentMonth, currentDay);
         }
 
         function prepararModalParaAgregar() {
@@ -141,7 +154,7 @@
             let fechaSugerida = new Date();
             fechaSugerida.setMonth(fechaSugerida.getMonth() + 1);
             
-            popularSelectoresFecha(fechaSugerida);
+            popularSelectoresFecha(fechaSugerida, 'add');
         }
 
         function prepararModalParaEditar(key) {
@@ -157,7 +170,7 @@
                     document.getElementById('interes').value = data.interes;
                     
                     const fechaExistente = new Date(data.fecha_pago + 'T00:00:00');
-                    popularSelectoresFecha(fechaExistente);
+                    popularSelectoresFecha(fechaExistente, 'edit');
                     
                     modalElement.show();
                 }
@@ -166,15 +179,15 @@
         
         function guardarCambios() {
             const key = document.getElementById('deudor-id').value;
-            const dia = diaSelect.value;
-            const mes = mesSelect.value;
-            const anio = anioSelect.value;
-            
-            // Los meses en JS son 0-11, los valores de los options son 0-11
-            // `dia` necesita ser formateado a 2 dígitos si es menor a 10
-            const diaFormateado = dia.padStart(2, '0');
+            let anio = anioSelect.value;
+            let mes = mesSelect.value;
+            // Si estamos en modo 'add', el año puede estar en el dataset del mes
+            if (mesSelect.options[mesSelect.selectedIndex] && mesSelect.options[mesSelect.selectedIndex].dataset.year) {
+                anio = mesSelect.options[mesSelect.selectedIndex].dataset.year;
+            }
+            const dia = diaSelect.value.padStart(2, '0');
             const mesFormateado = (parseInt(mes) + 1).toString().padStart(2, '0');
-            const fechaFinal = `${anio}-${mesFormateado}-${diaFormateado}`;
+            const fechaFinal = `${anio}-${mesFormateado}-${dia}`;
 
             const deudorData = {
                 nombre: document.getElementById('nombre').value,
@@ -200,6 +213,9 @@
         // ====================== FIN SECCIÓN MODIFICADA ======================
 
         // ... (El resto de funciones no necesitan cambios) ...
+        function cargarDatosDeUsuario() { /* ... */ }
+        function renderDeudores(deudores) { /* ... */ }
+        function pagarInteres(key) { /* ... */ }
         async function mostrarHistorial(key, nombre) { /* ... */ }
         function handleLogin() { /* ... */ }
         function handleRegister() { /* ... */ }
